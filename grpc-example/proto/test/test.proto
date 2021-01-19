@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package test;
+
+service Web {
+  rpc Register(RegisterReq) returns (Response);
+  rpc Check(CheckReq) returns (Response);
+}
+
+message RegisterReq {
+  string name = 1;
+  int32 age = 2;
+}
+
+message Response {
+  string message = 1;
+}
+
+message CheckReq {
+  string name = 1;
+}

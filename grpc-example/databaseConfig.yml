@@ -1,0 +1,4 @@
+dbName: "test"
+dbType: "mongodb"
+user: "user0"
+password: "1029"
