@@ -4,20 +4,20 @@ import(
 	"net"
 	"log"
 	"context"
-	"time"
 	"fmt"
-	// "path/filepath"
 	"io/ioutil"
-	"os"
+	"path/filepath"
 
 	"google.golang.org/grpc"
 	pb "../proto/test"
 
-	"go.mongodb.org/mongo-driver/bson"
-  "go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	_ "go.mongodb.org/mongo-driver/bson"
+  _ "go.mongodb.org/mongo-driver/mongo"
+	_ "go.mongodb.org/mongo-driver/mongo/options"
 	
 	"gopkg.in/yaml.v2"
+	"database/sql"
+	_ "github.com/go-sql-driver/mysql"
 
 )
 
@@ -30,11 +30,13 @@ type Post struct {
 	Age int32 `json:"body,omitempty"`
 }
 
-type DatabaseConfig struct {
-	dbName string `yaml:"dbName"`
-	dbType string `yaml:"dbType"`
-	user string `yaml:"user"`
-	password string `yaml:"password"`
+type Config struct {
+	DBName string `yaml:"dbName"`
+	DBType string `yaml:"dbType"`
+	Host string `yaml:"host"`
+	User string `yaml:"user"`
+	Password string `yaml:"password"`
+	Port string `yaml:"port"`
 }
 
 const(
@@ -49,80 +51,70 @@ func (s server) Register(ctx context.Context, in *pb.RegisterReq) (*pb.Response,
 	return &pb.Response{Message: "Complete!"}, nil
 }
 
-func (s server) Check(ctx context.Context, in *pb.CheckReq) (*pb.Response, error){
-	res := GetPost(in.GetName())
-	log.Printf("Retrive")
-	log.Printf("Name=%s\n", in.GetName())
-	log.Printf("Result - %s\n", res)
-	return &pb.Response{Message: res}, nil
-}
+// func (s server) Check(ctx context.Context, in *pb.CheckReq) (*pb.Response, error){
+// 	res := GetPost(in.GetName())
+// 	log.Printf("Retrive")
+// 	log.Printf("Name=%s\n", in.GetName())
+// 	log.Printf("Result - %s\n", res)
+// 	return &pb.Response{Message: res}, nil
+// }
 
 func InsertPost(name string, age int32) {
-	client := ConnectDB()
+	dbClient := ConnectDB()
 
-	post := Post{name, age}
-
-	collection := client.Database("test").Collection("grpc")
-	
-	insertResult, err := collection.InsertOne(context.TODO(), post)
+	result, err := dbClient.Exec("INSERT INTO grpc VALUES (?, ?, ?)", 4, name, age)	
 
 	if err != nil {
 		log.Fatal(err)
 	}
-	
-	fmt.Println("Inserted post with ID:", insertResult.InsertedID)	
+
+	n, err := result.RowsAffected()
+	if n == 1 {
+		fmt.Println("1 row inserted.")
+	}
 }
 
-func GetPost(name string) (string) {
-	client := ConnectDB()
+// func GetPost(name string) (string) {
+// 	client := ConnectDB()
 
-	collection := client.Database("test").Collection("grpc")
+// 	collection := client.Database("test").Collection("grpc")
 	
-	filter := bson.D{{"name", name}}
+// 	filter := bson.D{{"name", name}}
 	
-	var post Post
+// 	var post Post
 
-	err := collection.FindOne(context.TODO(), filter).Decode(&post)
+// 	err := collection.FindOne(context.TODO(), filter).Decode(&post)
 	
-	if err != nil {
-		return "Not Found"
-	} else {return "Found"}	
-}
+// 	if err != nil {
+// 		return "Not Found"
+// 	} else {return "Found"}	
+// }
 
-func ConnectDB()(client *mongo.Client){
+func ConnectDB()(*sql.DB){
+	var dbConfig Config
 
-	// filename, _ := filepath.Abs("../databaseConfig.yml")
-	// yamlFile, err := ioutil.ReadFile(filename)
-	
-	var databaseConfig DatabaseConfig
-	reader, _ := os.Open("/../databaseConfig.yml")
-  buf, _ := ioutil.ReadAll(reader)
-	yaml.Unmarshal(buf, &databaseConfig)
+	filename, _ := filepath.Abs("../config/mysql.yml")
+	yamlFile, _ := ioutil.ReadFile(filename)
+	yamlErr := yaml.Unmarshal(yamlFile, &dbConfig)
+	if yamlErr != nil {
+			panic(yamlErr)
+	}
 
-	// yamlErr := yaml.Unmarshal(yamlFile, databaseConfig)
+	connectURL := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True",
+		dbConfig.User, dbConfig.Password, dbConfig.Host, dbConfig.Port, dbConfig.DBName)
 
-	// if yamlErr != nil {
-	// 	panic(yamlErr)
-	// }
 
-	fmt.Printf("%+v\n", databaseConfig)
-
-	client, clientErr := mongo.NewClient(options.Client().ApplyURI("mongodb+srv://"+databaseConfig.user+":1029@cluster0.rijup.gcp.mongodb.net/test?retryWrites=true&w=majority"))
+	client, clientErr := sql.Open("mysql", connectURL)
 	
 	if clientErr != nil {
 			log.Fatal(clientErr)
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	err := client.Connect(ctx)
-
-	if err != nil {
-					log.Fatal(err)
-	}
 	return client
 }
 
 func main() {
+
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)

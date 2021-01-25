@@ -16,13 +16,13 @@ var test_proto = grpc.loadPackageDefinition(packageDefinition).test;
 function main() {
   var client = new test_proto.Web('localhost:50051', grpc.credentials.createInsecure());
 
-  client.register({name: "Jay", age: 30}, function(err, response) {
+  client.register({id: 4, name: "Jay", age: 45}, function(err, response) {
     console.log(response.message);
   });
 
-  client.check({name: "JIWON"}, function(err, response) {
-    console.log(response.message);
-  });
+  // client.check({name: "JIWON"}, function(err, response) {
+  //   console.log(response.message);
+  // });
 }
 
 main();

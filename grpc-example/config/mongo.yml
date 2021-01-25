@@ -1,0 +1,6 @@
+dbName: "test"
+dbType: "mongodb"
+host: "localhost"
+user: "user0"
+password: "1029"
+port: "cluster0.rijup.gcp.mongodb.net"

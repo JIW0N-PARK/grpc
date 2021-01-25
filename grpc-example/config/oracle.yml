@@ -1,0 +1,6 @@
+dbName: "orcl"
+dbType: "oracle"
+host: "localhost"
+user: "class_a" #userID
+password: "delab"
+port: "1521"
