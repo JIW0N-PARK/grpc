@@ -1,116 +1,121 @@
 package main
 
-import(
-	"net"
-	"log"
+import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"net"
 	"path/filepath"
 
-	"google.golang.org/grpc"
 	pb "../proto/test"
+	"google.golang.org/grpc"
 
 	_ "go.mongodb.org/mongo-driver/bson"
-  _ "go.mongodb.org/mongo-driver/mongo"
+	_ "go.mongodb.org/mongo-driver/mongo"
 	_ "go.mongodb.org/mongo-driver/mongo/options"
-	
-	"gopkg.in/yaml.v2"
-	"database/sql"
-	_ "github.com/go-sql-driver/mysql"
 
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
+
+	"gopkg.in/yaml.v2"
 )
 
 type server struct {
 	pb.UnimplementedWebServer
+	Database *Database
 }
 
-type Post struct {
-	Name string `json:"name,omitempty"`
-	Age int32 `json:"body,omitempty"`
+type User struct {
+	Id   int32 `gorm:"primaryKey"`
+	Name string
+	Age  int32
+}
+
+type Database struct {
+	DB *gorm.DB
 }
 
 type Config struct {
-	DBName string `yaml:"dbName"`
-	DBType string `yaml:"dbType"`
-	Host string `yaml:"host"`
-	User string `yaml:"user"`
+	DBName   string `yaml:"dbName"`
+	DBType   string `yaml:"dbType"`
+	Host     string `yaml:"host"`
+	User     string `yaml:"user"`
 	Password string `yaml:"password"`
-	Port string `yaml:"port"`
+	Port     string `yaml:"port"`
+	Type     string `yaml:"type"`
 }
 
-const(
+func (c *Config) setConfig(file string) {
+	filename, _ := filepath.Abs(file)
+	yamlFile, _ := ioutil.ReadFile(filename)
+	yamlErr := yaml.Unmarshal(yamlFile, &c)
+	if yamlErr != nil {
+		panic(yamlErr)
+	}
+}
+
+const (
 	port = ":50051"
 )
 
 func (s server) Register(ctx context.Context, in *pb.RegisterReq) (*pb.Response, error) {
-	log.Printf("Register")
+	log.Printf("--Register--")
 	log.Printf("Name=%s\n", in.GetName())
 	log.Printf("Age=%d\n", in.GetAge())
-	InsertPost(in.GetName(), in.GetAge())
-	return &pb.Response{Message: "Complete!"}, nil
+
+	res := InsertPost(s.Database.DB, in.GetName(), in.GetAge())
+	return &pb.Response{Message: res}, nil
 }
 
-// func (s server) Check(ctx context.Context, in *pb.CheckReq) (*pb.Response, error){
-// 	res := GetPost(in.GetName())
-// 	log.Printf("Retrive")
-// 	log.Printf("Name=%s\n", in.GetName())
-// 	log.Printf("Result - %s\n", res)
-// 	return &pb.Response{Message: res}, nil
-// }
+func (s server) Check(ctx context.Context, in *pb.CheckReq) (*pb.Response, error) {
+	res := GetPost(s.Database.DB, in.GetName(), &User{})
+	log.Printf("--Retrive--")
+	log.Printf("Name=%s\n", in.GetName())
+	log.Printf("Result - %s\n", res)
+	return &pb.Response{Message: res}, nil
+}
 
-func InsertPost(name string, age int32) {
-	dbClient := ConnectDB()
+func InsertPost(db *gorm.DB, name string, age int32) string {
+	var count int32
+	db.Model(&User{}).Count(&count)
+	user := User{Id: count + 1, Name: name, Age: age}
 
-	result, err := dbClient.Exec("INSERT INTO grpc VALUES (?, ?, ?)", 4, name, age)	
+	result := db.Create(&user)
+	if result.RowsAffected == 1 {
+		return "Complete Insert!"
+	} else {
+		return "Failed.."
+	}
+	//db.Exec("INSERT INTO grpc VALUES (?, ?, ?)", 5, name, age)
+}
+
+func GetPost(db *gorm.DB, name string, user *User) string {
+	result := db.Where("name = ?", name).Find(&user)
+	// db.Query("SELECT * FROM GRPC WHERE NAME = ?", name)
+
+	if result.RowsAffected == 1 {
+		return name + " is Found"
+	} else {
+		return name + " is Not Found"
+	}
+}
+
+func dbConnect(config *Config) *gorm.DB {
+
+	connectURL := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True",
+		config.User, config.Password, config.Host, config.Port, config.DBName)
+
+	db, err := gorm.Open(config.DBType, connectURL)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	n, err := result.RowsAffected()
-	if n == 1 {
-		fmt.Println("1 row inserted.")
-	}
-}
+	db.DB().SetMaxIdleConns(10)
+	db.DB().SetMaxOpenConns(100)
 
-// func GetPost(name string) (string) {
-// 	client := ConnectDB()
-
-// 	collection := client.Database("test").Collection("grpc")
-	
-// 	filter := bson.D{{"name", name}}
-	
-// 	var post Post
-
-// 	err := collection.FindOne(context.TODO(), filter).Decode(&post)
-	
-// 	if err != nil {
-// 		return "Not Found"
-// 	} else {return "Found"}	
-// }
-
-func ConnectDB()(*sql.DB){
-	var dbConfig Config
-
-	filename, _ := filepath.Abs("../config/mysql.yml")
-	yamlFile, _ := ioutil.ReadFile(filename)
-	yamlErr := yaml.Unmarshal(yamlFile, &dbConfig)
-	if yamlErr != nil {
-			panic(yamlErr)
-	}
-
-	connectURL := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True",
-		dbConfig.User, dbConfig.Password, dbConfig.Host, dbConfig.Port, dbConfig.DBName)
-
-
-	client, clientErr := sql.Open("mysql", connectURL)
-	
-	if clientErr != nil {
-			log.Fatal(clientErr)
-	}
-
-	return client
+	return db
 }
 
 func main() {
@@ -120,8 +125,15 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
+	var config Config
+	config.setConfig("../config/mysql.yml")
+
+	db := new(Database)
+	db.DB = dbConnect(&config)
+	defer db.DB.Close()
+
 	s := grpc.NewServer()
-	pb.RegisterWebServer(s, &server{})
+	pb.RegisterWebServer(s, &server{Database: db})
 
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
