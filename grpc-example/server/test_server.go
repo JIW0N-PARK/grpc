@@ -68,6 +68,7 @@ func (s server) Register(ctx context.Context, in *pb.RegisterReq) (*pb.Response,
 	return &pb.Response{Message: res}, nil
 }
 
+// Check : ...???
 func (s server) Check(ctx context.Context, in *pb.CheckReq) (*pb.Response, error) {
 	res := GetPost(s.Database.DB, in.GetName(), &User{})
 	log.Printf("--Retrive--")

@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+option go_package = "proto; grpc_user";
+
+package grpc_user;
+
+service UserService {
+  rpc Register(Request) returns (Response);
+  rpc Search(Request) returns (Response);
+}
+
+message Request {
+  string name = 1;
+  int32 age = 2;
+}
+
+message Response {
+  string res = 1;
+}

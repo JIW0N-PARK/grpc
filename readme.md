@@ -1,7 +1,7 @@
 ### go compile
 ```
-protoc --proto_path={C:\grpc\grpc-example\proto} --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative {helloworld.proto}
-```
+protoc --proto_path=proto --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative user.proto
+```grp
 ### node compile
 ```
 grpc_tools_node_protoc --grpc_out=grpc_js:./ {helloworld.proto}
