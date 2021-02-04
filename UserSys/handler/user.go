@@ -1,8 +1,9 @@
+package handler
+
 import (
-	"../model"
+	"github.com/jiohning/usersys/model"
 
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
 type UserHandler struct {

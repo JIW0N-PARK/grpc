@@ -1,39 +1,23 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net"
 
-	grpc_user "/gen/proto"
-	server "/grpc"
-	"/handler"
+	grpc_user "github.com/jiohning/usersys/gen/proto"
+	server "github.com/jiohning/usersys/grpc"
+	"github.com/jiohning/usersys/handler"
+
+	// "github.com/jiohning/usersys/database"
 
 	"google.golang.org/grpc"
-
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
 const (
-	port = ":50051"
+	port     = ":50051"
+	mysql    = "mysql"
+	postgres = "postgres"
 )
-
-func dbConnect(config) *gorm.DB {
-	connectURL := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True",
-		config.User, config.Password, config.Host, config.Port, config.DBName)
-
-	db, err := gorm.Open(config.DBType, connectURL)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	db.DB().SetMaxIdleConns(10)
-	db.DB().SetMaxOpenConns(100)
-
-	return db
-}
 
 func main() {
 	lis, err := net.Listen("tcp", port)
@@ -41,7 +25,7 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	db := dbConnect()
+	db := database.dbConnect(mysql)
 	handler := handler.NewHandler(db)
 
 	s := grpc.NewServer()

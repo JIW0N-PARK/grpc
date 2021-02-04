@@ -1,10 +1,10 @@
-package user;
+package server
 
 import (
 	"context"
 
-	grpc_user "../gen/proto"
-	"../handler"
+	grpc_user "github.com/jiohning/usersys/gen/proto"
+	"github.com/jiohning/grpc/usersys/handler"
 
 )
 
@@ -12,10 +12,8 @@ type Server struct {
 	handler *handler.UserHandler
 }
 
-func NewServer(handler *handler.UserHandler) (s *Server) {
-	return (
-		&Server{handler: handler}
-	)
+func NewServer(handler *handler.UserHandler) *grpc_user.UserServiceServer {
+	return &Server{ handler: handler}
 }
 
 func (s *Server) Register(ctx context.Context, req *grpc_user.Request) (res *grpc_user.Response, error) {
