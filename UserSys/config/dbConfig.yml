@@ -1,8 +1,0 @@
-dbName: "test"
-dbType: "mysql"
-host: "localhost"
-user: "root"
-password: "1029"
-port: "3306"
-maxIdleConns: 10
-maxOpenConns: 10

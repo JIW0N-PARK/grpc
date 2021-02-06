@@ -103,7 +103,6 @@ func GetPost(db *gorm.DB, name string, user *User) string {
 }
 
 func dbConnect(config *Config) *gorm.DB {
-
 	connectURL := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True",
 		config.User, config.Password, config.Host, config.Port, config.DBName)
 

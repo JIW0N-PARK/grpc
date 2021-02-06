@@ -1,27 +1,29 @@
 package server
 
 import (
+	grpc_user "../../usersys/gen/proto"
+	"../../usersys/handler"
 	"context"
-
-	grpc_user "github.com/jiohning/usersys/gen/proto"
-	"github.com/jiohning/grpc/usersys/handler"
-
+	"log"
 )
 
 type Server struct {
+	grpc_user.UnimplementedUserServiceServer
 	handler *handler.UserHandler
 }
 
-func NewServer(handler *handler.UserHandler) *grpc_user.UserServiceServer {
-	return &Server{ handler: handler}
+func NewServer(handler *handler.UserHandler) *Server {
+	return &Server{handler: handler}
 }
 
-func (s *Server) Register(ctx context.Context, req *grpc_user.Request) (res *grpc_user.Response, error) {
+func (s *Server) Register(ctx context.Context, req *grpc_user.Request) (*grpc_user.Response, error) {
 	res := s.handler.Register(req)
-	return &grpc_user.Response{res: res}, nil
+	log.Printf("Register : %s", res.Res)
+	return res, nil
 }
 
-func (s *Server) Search(ctx context.Context, req *grpc_user.Request) (res *grpc_user.Response, error) {
+func (s *Server) Search(ctx context.Context, req *grpc_user.Request) (*grpc_user.Response, error) {
 	res := s.handler.Search(req)
-	return &grpc_user.Response{res: res}, nil
+	log.Printf("Search : %s", res.Res)
+	return res, nil
 }

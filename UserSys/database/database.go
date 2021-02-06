@@ -9,12 +9,9 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+
 	"gopkg.in/yaml.v2"
 )
-
-type Database struct {
-	config *dbConfig
-}
 
 type dbConfig struct {
 	DBName       string `yaml:"dbName"`
@@ -27,38 +24,36 @@ type dbConfig struct {
 	MaxOpenConns int    `yaml:"maxOpenConns"`
 }
 
-func dbConnect(dbtype string) *gorm.DB {
-	database := initDB(dbtype)
+func DBInit(dbtype string) *gorm.DB {
+	var config dbConfig
+	config.setConfig(dbtype)
 
+	db := connect(&config)
+	return db
+}
+
+func connect(config *dbConfig) *gorm.DB {
 	connectURL := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True",
-		database.config.User, database.config.Password, database.config.Host, database.config.Port, database.config.DBName)
+		config.User, config.Password, config.Host, config.Port, config.DBName)
 
-	db, err := gorm.Open(dbtype, connectURL)
+	db, err := gorm.Open(config.DBType, connectURL)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	db.DB().SetMaxIdleConns(database.config.MaxIdleConns)
-	db.DB().SetMaxOpenConns(database.config.MaxOpenConns)
+	db.DB().SetMaxIdleConns(config.MaxIdleConns)
+	db.DB().SetMaxOpenConns(config.MaxOpenConns)
 
 	return db
 }
 
-func initDB(dbtype string) *Database {
-	database := new(Database)
-	var config dbConfig
-	file := "../config/" + dbtype + ".yml"
-	database.config = config.setConfig(file)
-	return database
-}
-
-func (c *dbConfig) setConfig(file string) *dbConfig {
+func (c *dbConfig) setConfig(dbtype string) {
+	file := "../usersys/config/"+dbtype+".yml"
 	filename, _ := filepath.Abs(file)
 	yamlFile, _ := ioutil.ReadFile(filename)
 	yamlErr := yaml.Unmarshal(yamlFile, &c)
 	if yamlErr != nil {
 		panic(yamlErr)
 	}
-	return c
 }
