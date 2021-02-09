@@ -6,14 +6,24 @@ package grpc_user;
 
 service UserService {
   rpc Register(Request) returns (Response);
-  rpc Search(Request) returns (Response);
+  rpc Login(Request) returns (Response);
 }
 
 message Request {
   string name = 1;
-  int32 age = 2;
+  string password = 2;
+  string email = 3;
 }
 
 message Response {
-  string res = 1;
+  ResponseResult response = 1;
+}
+
+enum ResponseResult {
+    REGISTERED = 0;
+    NOT_REGISTERED = -1;
+    DUPLICATED_EMAIL = -2;
+    INVALID_EMAIL = -3;
+    INVALID_PASSWORD = -4;
+    LOGIN_SUCCESS = 1;
 }

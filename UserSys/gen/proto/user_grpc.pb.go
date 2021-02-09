@@ -18,7 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type UserServiceClient interface {
 	Register(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
-	Search(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
+	Login(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
 }
 
 type userServiceClient struct {
@@ -38,9 +38,9 @@ func (c *userServiceClient) Register(ctx context.Context, in *Request, opts ...g
 	return out, nil
 }
 
-func (c *userServiceClient) Search(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error) {
+func (c *userServiceClient) Login(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error) {
 	out := new(Response)
-	err := c.cc.Invoke(ctx, "/grpc_user.UserService/Search", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/grpc_user.UserService/Login", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (c *userServiceClient) Search(ctx context.Context, in *Request, opts ...grp
 // for forward compatibility
 type UserServiceServer interface {
 	Register(context.Context, *Request) (*Response, error)
-	Search(context.Context, *Request) (*Response, error)
+	Login(context.Context, *Request) (*Response, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -63,8 +63,8 @@ type UnimplementedUserServiceServer struct {
 func (UnimplementedUserServiceServer) Register(context.Context, *Request) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
 }
-func (UnimplementedUserServiceServer) Search(context.Context, *Request) (*Response, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Search not implemented")
+func (UnimplementedUserServiceServer) Login(context.Context, *Request) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 
@@ -97,20 +97,20 @@ func _UserService_Register_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UserService_Search_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _UserService_Login_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Request)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UserServiceServer).Search(ctx, in)
+		return srv.(UserServiceServer).Login(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/grpc_user.UserService/Search",
+		FullMethod: "/grpc_user.UserService/Login",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).Search(ctx, req.(*Request))
+		return srv.(UserServiceServer).Login(ctx, req.(*Request))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -124,8 +124,8 @@ var _UserService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _UserService_Register_Handler,
 		},
 		{
-			MethodName: "Search",
-			Handler:    _UserService_Search_Handler,
+			MethodName: "Login",
+			Handler:    _UserService_Login_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -16,13 +16,16 @@ var client = new proto.UserService('localhost:8080', grpc.credentials.createInse
 
 function main() {
 
-    // client.register({name: "yoonha", age: 23}, function(err, response) {
-    //     console.log(response.res);
-    // });
-
-    client.search({name: "jia", age: 23}, function(err, response) {
-        console.log(response.res);
+    client.register({name: "jiwon", email: "jiohning00@hanmail.net", password: "123456"}, function(err, response) {
+        console.log("~Register~");
+        console.log(response.response);
     });
+
+    client.login({email: "jiohning00@hanmail.net", password: "12345"}, function(err, response) {
+        console.log("~Login~");
+        console.log(response.response);
+    });
+
 }
 
 main();

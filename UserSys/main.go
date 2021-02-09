@@ -1,15 +1,14 @@
 package main
 
 import (
+	"google.golang.org/grpc"
+	"grpc_ex/database"
+	grpc_user "grpc_ex/gen/proto"
+	server "grpc_ex/grpc"
+	"grpc_ex/handler"
+
 	"log"
 	"net"
-
-	grpc_user "../usersys/gen/proto"
-	datab "../usersys/database"
-	server "../usersys/grpc"
-	"../usersys/handler"
-
-	"google.golang.org/grpc"
 )
 
 const (
@@ -25,7 +24,7 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	db := datab.DBInit(mysql)
+	db := database.DBInit(mysql)
 	newHandler := handler.NewHandler(db)
 
 	s := grpc.NewServer()
